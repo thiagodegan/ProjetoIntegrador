@@ -1,0 +1,44 @@
+﻿
+@{
+    ViewData["Title"] = "Modelos";
+}
+
+<h2>Modelos Treinados</h2>
+
+<kendo-datasource name="dataSource" type="DataSourceTagHelperType.Ajax" server-operation="false" page-size="20">
+    <transport>
+        <read url="modelo/getdados" />
+    </transport>
+    <schema>
+        <model id="Modelo">
+            <fields>
+                <field name="DFilial" type="string" />
+                <field name="Categoria" type="string" />
+                <field name="RootMeanSquaredError" type="double" />
+                <field name="MeanSquaredError" type="double" />
+                <field name="MeanAbsoluteError" type="double" />
+            </fields>
+        </model>
+    </schema>
+    <groups>
+        <group field="Categoria"></group>
+        <group field="DFilial"></group>
+    </groups>
+</kendo-datasource>
+
+<kendo-grid name="grid" datasource-id="dataSource">
+    <groupable enabled="true"/>
+    <sortable enabled="true"/>
+    <pageable button-count="5" refresh="true" page-sizes="new int[] { 5, 10 , 20 }"></pageable>
+    <filterable enabled="true"/>
+    <columns>
+        <!--<column field="Nome" title="Filial" width="150" />
+    <column field="Categoria" title="Categoria" width="150" />-->
+        <column field="RootMeanSquaredError" title="RMSE" />
+        <column field="MeanSquaredError" title="MSE" />
+        <column field="MeanAbsoluteError" title="MAE" />
+    </columns>
+    
+    
+</kendo-grid>
+

@@ -1,0 +1,38 @@
+﻿
+@{
+    ViewData["Title"] = "Projeção";
+}
+
+<script src="~/js/projecao/index.js" type="text/javascript"></script>
+
+<h2>@ViewData["Title"].</h2>
+
+<div class="row">
+    <div class="col-xs-12 col-md-2">
+        <h4>Data Inicial</h4>
+        <kendo-datepicker name="dtini" value="DateTime.Now.Date" style="width: 100%" />
+    </div>
+    <div class="col-xs-12 col-md-2">
+        <h4>Data Final</h4>
+        <kendo-datepicker name="dtfim" value="DateTime.Now.Date" style="width: 100%" />
+    </div>
+    <div class="col-xs-12 col-md-3">
+        <h4>Filiais</h4>
+        <select id="filiais"></select>
+    </div>
+    <div class="col-xs-12 col-md-3">
+        <h4>Categorias</h4>
+        <select id="categorias"></select>
+    </div>
+    <div class="col-xs-12 col-md-2">
+        <h4> </h4>
+        <kendo-button name="BtnFiltrar" tag="span" class="textButton k-primary" >Filtrar</kendo-button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xs-12 col-md-12">        
+        <div id="chart"></div>
+    </div>
+</div>
+

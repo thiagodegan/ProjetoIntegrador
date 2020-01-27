@@ -1,0 +1,47 @@
+﻿
+@{
+    ViewData["Title"] = "Atividades";
+}
+
+<script src="~/js/atividade/index.js" type="text/javascript"></script>
+
+<h2>@ViewData["Title"].</h2>
+
+<kendo-datasource name="dataSource" type="DataSourceTagHelperType.Ajax" server-operation="false" page-size="20">
+    <transport>
+        <read url="atividade/getatividade"/>
+    </transport>
+    <schema>
+        <model id="NomeAtividade">
+            <fields>
+                <field name="NomeAtividade" type="string" />
+                <field name="DescricaoAtivvidade" type="string" />
+                <field name="UltimaExecucao" type="date" />
+                <field name="UltimoTempo" type="date" />
+                <field name="ProximaExecucao" type="date" />
+                <field name="Status" type="string" />
+            </fields>
+        </model>
+    </schema>
+</kendo-datasource>
+
+<kendo-grid name="dgrid" datasource-id="dataSource">
+    <groupable enabled="false" />
+    <sortable enabled="true" />
+    <filterable enabled="true" />
+    <pageable button-count="5" refresh="true" page-sizes="new int[] { 5, 10, 20 }">
+    </pageable>
+    <columns>
+        <column width="160">
+            <commands>
+                <column-command name="Executar" text=" " icon-class="k-icon k-i-play" click="executarClick" />                
+            </commands>
+        </column>
+        <column field="NomeAtividade" title="Atividade" />
+        <column field="DescricaoAtividade" title="Descrição" />
+        <column field="UltimaExecucao" title="Ult. Execução" format="{0:dd/MM/yyyy HH:mm:ss}" width="120" />
+        <column field="UltimoTempo" title="Ult. Tempo" format="{0:HH:mm:ss}" width="100" />
+        <column field="ProximaExecucao" title="Próx. Execução" format="{0:dd/MM/yyyy HH:mm:ss}" width="120" />
+        <column field="Status" title="Status" width="120" />
+    </columns>
+</kendo-grid>
