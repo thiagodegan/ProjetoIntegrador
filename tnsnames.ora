@@ -1,0 +1,8 @@
+GSRETAIL =
+  (DESCRIPTION = 
+    (ADDRESS = (PROTOCOL = TCP) (HOST = 140.238.184.200) (PORT = 1524))
+     (CONNECT_DATA = 
+       (SERVER = DEDICATED)
+       (SERVICE_NAME = GSDB_gru183.gssubnet.oraclevcn.com)
+     )
+)
