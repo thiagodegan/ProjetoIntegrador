@@ -31,26 +31,9 @@ namespace ProjetoIntregador.BackgroundService
             {
                 loggerService.LogDebug("Executa atividade: {0}", NomeAtividade);
 
-                var tsk = Task.Run(() =>
-                {
-                    EfetuarPrevisao treinarModelos = new EfetuarPrevisao(configuration);
+                EfetuarPrevisao treinarModelos = new EfetuarPrevisao(configuration);
 
-                    try
-                    {
-                        treinarModelos.EfetuaPrevisao(new DateTime(2019,8,1), new DateTime(2019,9,30));
-                    }
-                    catch (Exception ex)
-                    {
-                        loggerService.LogError(ex, "Erro ao processar atividade!");
-                        throw ex;
-                    }
-                    finally
-                    {
-                        treinarModelos = null;
-                    }
-                });
-
-                await tsk;
+                await treinarModelos.EfetuaPrevisao(new DateTime(2019,8,1), new DateTime(2019,9,30));
 
                 loggerService.LogDebug("Término atividade: {0}", NomeAtividade);
             }
