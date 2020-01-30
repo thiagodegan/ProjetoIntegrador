@@ -8,6 +8,7 @@ namespace ProjetoIntregador.Dados.Model
     public class RegistroCmv
     {
         public DateTime Dia { get; set; }
+        public bool Feriado { get; set; }
         public float Valor { get; set; }
         public float Previsao { get; set; }
         public bool ValorIsNull { get; set; }

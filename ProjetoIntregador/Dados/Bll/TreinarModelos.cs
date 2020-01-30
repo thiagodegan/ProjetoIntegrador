@@ -144,8 +144,13 @@ namespace ProjetoIntregador.Dados.Bll
 
                 StringBuilder sb = new StringBuilder();
                 sb.AppendLine("select RMS7TO_DATE(g.dia) DIA,");
+                sb.AppendLine("       case when df.dia_meta is null");
+                sb.AppendLine("              and d.dia_meta is null then 0 else 1 end feriado,");
                 sb.AppendLine("       G.VDA_CMV VALOR");
                 sb.AppendLine("from gs_agg_coml_sgrp_dia g");
+                sb.AppendLine("left join gs_meta_diasatipico_filial df on df.filial = g.filial");
+                sb.AppendLine("                                        and df.dia_meta = rms7to_date(g.dia)");
+                sb.AppendLine("left join gs_meta_diasatipico d on d.dia_meta = rms7to_date(g.dia)");
                 sb.AppendLine("where g.filial = &FILIAL");
                 sb.AppendLine("and g.secao = &SECAO");
                 sb.AppendLine("and g.grp = &GRUPO");
@@ -175,6 +180,7 @@ namespace ProjetoIntregador.Dados.Bll
                             {
                                 case "DIA": registro.Dia = Convert.ToDateTime(dataRow[dataColumn]); break;
                                 case "VALOR": registro.Valor = (float)Convert.ToDouble(dataRow[dataColumn]); break;
+                                case "FERIADO": registro.Feriado = Convert.ToInt32(dataRow[dataColumn]) == 1; break;
                                 default:
                                     break;
                             }
@@ -259,39 +265,58 @@ namespace ProjetoIntregador.Dados.Bll
         {
             var filiais = ListarFiliais();
             var categorias = ListarCategorias();
+
+            var qrySecao = from p in categorias
+                           group p by p.Secao into g
+                           select new RegistroCategoria
+                           {
+                               Secao = g.Key
+                           };
+            var secoes = qrySecao.ToList();
             TransformData transformData = new TransformData();
             ModelBuilder modelBuilder = new ModelBuilder();
             List<Task> lstTsks = new List<Task>();
 
             foreach (var filial in filiais)
             {
-                var tsk = Task.Run(() =>
-                {
-                    foreach (var categoria in categorias)
-                    {
-                        try
+                foreach (var secao in secoes)
+                {    
+                    var qryCategoria = from p in categorias
+                                           where p.Secao == secao.Secao
+                                           select p;
+                    var categoriaSecao = qryCategoria.ToList();                                       
+                    var tsk = Task.Run(() =>
+                    {                        
+                        foreach (var categoria in categoriaSecao)
                         {
-                            var historico = ListarHistorico(filial.Filial, categoria.Secao, categoria.Grupo, categoria.SubGrupo);
+                            try
+                            {
+                                var historico = ListarHistorico(filial.Filial, categoria.Secao, categoria.Grupo, categoria.SubGrupo);
 
-                            if (historico != null && historico.Count > 365 && historico.Sum(m => m.Valor) > 0)
-                            {                                
-                                var transformedData = transformData.TransformaDados(historico);
+                                if (historico != null && historico.Count > 365 && historico.Sum(m => m.Valor) > 0)
+                                {                                
+                                    var transformedData = transformData.TransformaDados(historico);
 
-                                var modelo = modelBuilder.CreateModel(transformedData);
+                                    var modelo = modelBuilder.CreateModel(transformedData);
 
-                                modelo.Filial = filial.Filial;
-                                modelo.Secao = categoria.Secao;
-                                modelo.Grupo = categoria.Grupo;
-                                modelo.SubGrupo = categoria.SubGrupo;
-                                GravarModelo(modelo);                                
+                                    modelo.Filial = filial.Filial;
+                                    modelo.Secao = categoria.Secao;
+                                    modelo.Grupo = categoria.Grupo;
+                                    modelo.SubGrupo = categoria.SubGrupo;
+                                    GravarModelo(modelo);                                
+                                }
+                                historico = null;
                             }
-                            historico = null;
+                            catch (Exception ex) 
+                            { 
+                                //throw ex;
+                                ex = null;
+                            }
                         }
-                        catch { }
-                    }
-                });
+                    });
 
-                lstTsks.Add(tsk);
+                    lstTsks.Add(tsk);
+                }
             }
 
             await Task.WhenAll(lstTsks);

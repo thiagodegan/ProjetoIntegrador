@@ -130,6 +130,44 @@ namespace ProjetoIntregador.Dados.Bll
                 dal = null;
             }
         }
+
+        private bool VerificaFeriado (DateTime dia, int Filial)
+        {
+            DalConnection dal = new DalConnection(configuration);
+
+            try 
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine("SELECT 1 feriado");
+                sb.AppendLine("FROM DUAL");
+                sb.AppendLine("WHERE EXISTS (SELECT 1 FROM GS_META_DIASATIPICO WHERE dia_meta = &DIA)");
+                sb.AppendLine("OR exists (select 1 from gs_meta_diasatipico_filial where dia_meta = &DIA and filial = &FIL)");
+
+                Dictionary<string, object> param = new Dictionary<string, object> 
+                {
+                    { "DIA", dia},
+                    { "FIL", Filial}
+                };
+
+                var dt = dal.ExecuteQuery(sb, param);
+
+                if (dt != null && dt.Rows.Count > 0)
+                {
+                    return Convert.ToInt32(dt.Rows[0][0]) == 1;
+                }
+
+                return false;
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                dal = null;
+            }
+        }
+
         private List<RegistroCmv> EfetuaPrevisao(DateTime dtIni, DateTime dtFim, RegistroModelo modelo)
         {
             ConsomeModel ml = new ConsomeModel();
@@ -140,10 +178,15 @@ namespace ProjetoIntregador.Dados.Bll
 
             do
             {
-                registroCmvs.Add(new RegistroCmv { Dia = dtAtual });
+                registroCmvs.Add(new RegistroCmv { Dia = dtAtual});
                 dtAtual = dtAtual.AddDays(1);
                 
             } while (dtAtual <= dtFim);
+
+            foreach (var registro in registroCmvs)
+            {
+                registro.Feriado = VerificaFeriado(registro.Dia, modelo.Filial);                    
+            }
 
             modelInputs = transformData.TransformaDados(registroCmvs);
             int atual = 0;
@@ -217,17 +260,23 @@ namespace ProjetoIntregador.Dados.Bll
             }
         }
 
-        public void EfetuaPrevisao(DateTime dtIni, DateTime dtFim)
+        public async Task EfetuaPrevisao(DateTime dtIni, DateTime dtFim)
         {
             var lstModelos = CarregaModelos();
 
             if (lstModelos != null && lstModelos.Any())
             {
+                List<Task> lstTasks = new List<Task>();
                 foreach (var modelo in lstModelos)
                 {
-                    var previsoes = EfetuaPrevisao(dtIni, dtFim, modelo);
-                    GravaPrevisoes(previsoes, modelo);
+                    var tsk = Task.Run(() => {
+                        var previsoes = EfetuaPrevisao(dtIni, dtFim, modelo);
+                        GravaPrevisoes(previsoes, modelo);
+                    });
+                    lstTasks.Add(tsk);
                 }
+
+                await Task.WhenAll(lstTasks);
             }
         }
 

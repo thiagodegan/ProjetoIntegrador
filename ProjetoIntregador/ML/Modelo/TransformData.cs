@@ -47,6 +47,7 @@ namespace ProjetoIntregador.ML.Modelo
                 SEM_MES_TER = GetWeekNumberOfMonth(registroCmv.Dia) == 3 ? 1 : 0,
                 SEM_MES_QUA = GetWeekNumberOfMonth(registroCmv.Dia) == 4 ? 1 : 0,
                 SEM_MES_QUI = GetWeekNumberOfMonth(registroCmv.Dia) == 5 ? 1 : 0,
+                FERIADO = registroCmv.Feriado ? 1 : 0,
             };
 
             return modelOutput;

@@ -95,8 +95,10 @@ namespace ProjetoIntregador.ML.Modelo
         [ColumnName("DIA_SAB"), LoadColumn(21)]
         public float DIA_SAB { get; set; }
 
+        [ColumnName("FERIADO"), LoadColumn(22)]
+        public float FERIADO { get; set; }
 
-        [ColumnName("Label"), LoadColumn(22)]
+        [ColumnName("Label"), LoadColumn(23)]
         public float Label { get; set; }
     }
 }
