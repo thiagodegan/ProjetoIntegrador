@@ -312,11 +312,24 @@ namespace ProjetoIntregador.Dados.Bll
                         });   
                         lstTsks.Add(tsk);
     
-                        if (lstTsks.Count >= 10)
+                        if (lstTsks.Count >= 20)
                         {
-                            await Task.WhenAll(lstTsks);
+                            await Task.WhenAny(lstTsks);
+
+                            List<Task> lstRmv = new List<Task>();
     
-                            lstTsks = new List<Task>();
+                            foreach (var tskComplet in lstTsks)
+                            {
+                                if (tskComplet.IsCompleted)
+                                {
+                                    lstRmv.Add(tskComplet);
+                                }
+                            }
+
+                            foreach (var tskRmv in lstRmv)
+                            {
+                                lstTsks.Remove(tskRmv);
+                            }
                         }                 
                     }  
                 }              

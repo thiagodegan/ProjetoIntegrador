@@ -277,10 +277,23 @@ namespace ProjetoIntregador.Dados.Bll
                         GravaPrevisoes(previsoes, modelo);
                     });
                     lstTasks.Add(tsk);
-                    if (lstTasks.Count > 10)
+                    if (lstTasks.Count > 20)
                     {
-                        await Task.WhenAll(lstTasks);
-                        lstTasks = new List<Task>();
+                        await Task.WhenAny(lstTasks);
+                        List<Task> lstRmv = new List<Task>();
+
+                        foreach (var tskComplet in lstTasks)
+                        {
+                            if (tskComplet.IsCompleted)
+                            {
+                                lstRmv.Add(tskComplet);
+                            }
+                        }
+
+                        foreach(var itemRmv in lstRmv)
+                        {
+                            lstTasks.Remove(itemRmv);
+                        }
                     }
                 }
                 
