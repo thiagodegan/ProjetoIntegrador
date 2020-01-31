@@ -6,7 +6,9 @@ using Kendo.Mvc.Extensions;
 using Kendo.Mvc.UI;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using ProjetoIntregador.Dados.Bll;
+using ProjetoIntregador.Dados.Bll.Contract;
 using ProjetoIntregador.Dados.Model;
 
 namespace ProjetoIntregador.Controllers
@@ -14,9 +16,13 @@ namespace ProjetoIntregador.Controllers
     public class ModeloController : Controller
     {
         private readonly IConfiguration configuration;
-        public ModeloController(IConfiguration configuration)
+        private readonly ILogger<ModeloController> logger;
+        private readonly ITreinarModelos treinarModelos;
+        public ModeloController(IConfiguration configuration, ILogger<ModeloController> logger, ITreinarModelos treinarModelos)
         {
             this.configuration = configuration;
+            this.logger = logger;
+            this.treinarModelos = treinarModelos;
         }
 
         public IActionResult Index()
@@ -27,8 +33,7 @@ namespace ProjetoIntregador.Controllers
         public IActionResult GetDados([DataSourceRequest]DataSourceRequest request)
         {
             List<RegistroModelo> registroModelos = null;
-            TreinarModelos treinarModelos = new TreinarModelos(configuration);
-            EfetuarPrevisao efetuarPrevisao = new EfetuarPrevisao(configuration);
+            EfetuarPrevisao efetuarPrevisao = new EfetuarPrevisao(configuration, logger);
 
             registroModelos = efetuarPrevisao.CarregaModelosMetricas();
 

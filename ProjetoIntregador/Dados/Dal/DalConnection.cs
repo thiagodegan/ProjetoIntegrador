@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
@@ -12,20 +13,32 @@ namespace ProjetoIntregador.Dados.Dal
     public class DalConnection
     {
         readonly IConfiguration configuration;
-        public DalConnection(IConfiguration configuration)
+        readonly ILogger logger;
+        public DalConnection(IConfiguration configuration, ILogger logger)
         {
             this.configuration = configuration;
+            this.logger = logger;
         }
 
         private OracleConnection GetConnection()
         {
-            OracleConnection connection = new OracleConnection(configuration.GetConnectionString("GSRetail"));
-            connection.Open();
-            return connection;
+            try
+            {
+                OracleConnection connection = new OracleConnection(configuration.GetConnectionString("GSRetail"));
+                connection.Open();
+                return connection;
+            }
+            catch(Exception ex)
+            {
+                logger.LogError(ex, "Abre Conexao");
+                throw ex;
+            }
         }
 
         public void ExecuteNonQuery(StringBuilder sb, Dictionary<string, object> param )
         {
+            try
+            {
             var con = GetConnection();
             var cmd = con.CreateCommand();
 
@@ -50,42 +63,56 @@ namespace ProjetoIntregador.Dados.Dal
                 cmd.ExecuteNonQuery();
                 transaction.Commit();
             }
-            catch 
+            catch (Exception ex) 
             {
                 transaction.Rollback();
-                throw;
+                throw ex;
+            }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Executa Non Query");
+                throw ex;
             }
         }
 
         public DataTable ExecuteQuery(StringBuilder sb, Dictionary<string, object> param)
         {
-            var con = GetConnection();
-            var cmd = con.CreateCommand();
-
-            cmd.BindByName = true;
-            cmd.CommandType = System.Data.CommandType.Text;
-
-            cmd.CommandText = sb.ToString().Replace("&", ":");
-
-            if (param != null)
+            try
             {
-                foreach (var parametro in param)
+                var con = GetConnection();
+                var cmd = con.CreateCommand();
+
+                cmd.BindByName = true;
+                cmd.CommandType = System.Data.CommandType.Text;
+
+                cmd.CommandText = sb.ToString().Replace("&", ":");
+
+                if (param != null)
                 {
-                    cmd.Parameters.Add(parametro.Key, parametro.Value);
+                    foreach (var parametro in param)
+                    {
+                        cmd.Parameters.Add(parametro.Key, parametro.Value);
+                    }
                 }
+                OracleDataAdapter dt = new OracleDataAdapter(cmd);
+
+                DataTable result = new DataTable();
+
+                dt.Fill(result);
+
+                con.Close();
+                cmd = null;
+                con = null;
+                dt = null;
+
+                return result;
             }
-            OracleDataAdapter dt = new OracleDataAdapter(cmd);
-
-            DataTable result = new DataTable();
-
-            dt.Fill(result);
-
-            con.Close();
-            cmd = null;
-            con = null;
-            dt = null;
-
-            return result;
+            catch(Exception ex)
+            {
+                logger.LogError(ex, "Execute Query");
+                throw ex;
+            }
         }
     }
 }

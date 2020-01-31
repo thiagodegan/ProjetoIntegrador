@@ -8,6 +8,7 @@ using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using NLog.Web;
 
 namespace ProjetoIntregador
 {
@@ -15,12 +16,32 @@ namespace ProjetoIntregador
     {
         public static void Main(string[] args)
         {
-            CultureInfo.CurrentCulture = new CultureInfo("pt-BR");
-            CreateWebHostBuilder(args).Build().Run();
+            var logger = NLogBuilder.ConfigureNLog("nlog.config").GetCurrentClassLogger();
+
+            try
+            {
+                CultureInfo.CurrentCulture = new CultureInfo("pt-BR");
+                logger.Debug("init main");
+                CreateWebHostBuilder(args).Build().Run();
+            }
+            catch(Exception ex)
+            {
+                logger.Error(ex, "Erro Fatal, servidor finalizado!");
+            }
+            finally
+            {
+                NLog.LogManager.Shutdown();
+            }
+            
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
-                .UseStartup<Startup>();
+                .UseStartup<Startup>()
+                .ConfigureLogging(logging => 
+                {
+                    logging.ClearProviders();
+                    logging.SetMinimumLevel(LogLevel.Trace);
+                });
     }
 }
