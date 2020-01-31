@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ProjetoIntregador.BackgroundService.Base;
-using ProjetoIntregador.Dados.Bll;
+using ProjetoIntregador.Dados.Bll.Contract;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,10 +27,9 @@ namespace ProjetoIntregador.BackgroundService
 
         public override async Task ProcessInScope(IServiceProvider serviceProvider)
         {
-            TreinarModelos treinarModelos = new TreinarModelos(configuration);
-
             try
             {
+                var treinarModelos = serviceProvider.GetService<ITreinarModelos>();
                 loggerService.LogDebug("Executa atividade: {0}", NomeAtividade);
 
                 await treinarModelos.Treinar();
@@ -41,10 +40,6 @@ namespace ProjetoIntregador.BackgroundService
             {
                 loggerService.LogError(ex, "Erro ao processar atividade!");
                 throw ex;
-            }
-            finally
-            {
-                treinarModelos = null;
             }
         }
     }

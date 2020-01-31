@@ -5,8 +5,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using ProjetoIntregador.Dados.Bll;
+using ProjetoIntregador.Dados.Bll.Contract;
 using ProjetoIntregador.Dados.Model;
 using ProjetoIntregador.Models;
 
@@ -15,10 +17,14 @@ namespace ProjetoIntregador.Controllers
     public class ProjecaoController : Controller
     {
         private readonly IConfiguration configuration;
+        private readonly ILogger<ProjecaoController> logger;
+        private readonly ITreinarModelos treinarModelos;
 
-        public ProjecaoController(IConfiguration configuration)
+        public ProjecaoController(IConfiguration configuration, ILogger<ProjecaoController> logger, ITreinarModelos treinarModelos)
         {
             this.configuration = configuration;
+            this.logger = logger;
+            this.treinarModelos = treinarModelos;
         }
 
         public IActionResult Index()
@@ -29,7 +35,7 @@ namespace ProjetoIntregador.Controllers
         [HttpPost]
         public IActionResult GetDados([FromBody]dynamic filtro)
         {
-            EfetuarPrevisao efetuarPrevisao = new EfetuarPrevisao(configuration);
+            EfetuarPrevisao efetuarPrevisao = new EfetuarPrevisao(configuration, logger);
 
             try
             {
@@ -56,9 +62,7 @@ namespace ProjetoIntregador.Controllers
 
         [HttpPost]
         public IActionResult GetFiliais()
-        {
-            TreinarModelos treinarModelos = new TreinarModelos(configuration);
-
+        {            
             try
             {
                 var dados = treinarModelos.ListarFiliais();
@@ -74,16 +78,11 @@ namespace ProjetoIntregador.Controllers
             {
                 throw;
             }
-            finally
-            {
-                treinarModelos = null;
-            }
         }
 
         [HttpPost]
         public IActionResult GetCategorias()
-        {
-            TreinarModelos treinarModelos = new TreinarModelos(configuration);
+        {            
 
             try
             {
@@ -99,10 +98,6 @@ namespace ProjetoIntregador.Controllers
             catch
             {
                 throw;
-            }
-            finally
-            {
-                treinarModelos = null;
             }
         }
     }

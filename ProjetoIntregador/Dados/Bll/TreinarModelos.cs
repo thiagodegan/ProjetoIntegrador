@@ -8,20 +8,24 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Data;
 using ProjetoIntregador.ML.Modelo;
+using ProjetoIntregador.Dados.Bll.Contract;
+using Microsoft.Extensions.Logging;
 
 namespace ProjetoIntregador.Dados.Bll
 {
-    public class TreinarModelos
+    public class TreinarModelos : ITreinarModelos
     {
         readonly IConfiguration configuration;
-        public TreinarModelos(IConfiguration configuration)
+        private ILogger<TreinarModelos> logger;
+        public TreinarModelos(IConfiguration configuration, ILogger<TreinarModelos> logger)
         {
             this.configuration = configuration;
+            this.logger = logger;
         }
 
         public List<RegistroFilial> ListarFiliais()
         {
-            DalConnection dal = new DalConnection(configuration);
+            DalConnection dal = new DalConnection(configuration, logger);
 
             try
             {
@@ -32,7 +36,7 @@ namespace ProjetoIntregador.Dados.Bll
                 sb.AppendLine("FROM gs_mvw_filiais");
                 sb.AppendLine("WHERE tipofilial = 'L'");
                 sb.AppendLine("AND natureza = 'LS'");
-               // sb.AppendLine("AND codigo = 8"); // TODO: REMOVER EM PRODUCAO ESTA TRAVADO APENAS UMA FILIAL
+                sb.AppendLine("AND codigo >= 5"); // TODO: REMOVER EM PRODUCAO ESTA TRAVADO APENAS UMA FILIAL
                 sb.AppendLine("ORDER BY codigo");
 
                 var dt = dal.ExecuteQuery(sb, null);
@@ -75,7 +79,7 @@ namespace ProjetoIntregador.Dados.Bll
 
         public List<RegistroCategoria> ListarCategorias()
         {
-            DalConnection dal = new DalConnection(configuration);
+            DalConnection dal = new DalConnection(configuration, logger);
 
             try
             {
@@ -136,7 +140,7 @@ namespace ProjetoIntregador.Dados.Bll
 
         private List<RegistroCmv> ListarHistorico(int Filial, int Secao, int Grupo, int SubGrupo)
         {
-            DalConnection dal = new DalConnection(configuration);
+            DalConnection dal = new DalConnection(configuration, logger);
 
             try
             {
@@ -204,7 +208,7 @@ namespace ProjetoIntregador.Dados.Bll
 
         private void GravarModelo(RegistroModelo registroModelo)
         {
-            DalConnection dal = new DalConnection(configuration);
+            DalConnection dal = new DalConnection(configuration, logger);
 
             try
             {
@@ -266,60 +270,60 @@ namespace ProjetoIntregador.Dados.Bll
             var filiais = ListarFiliais();
             var categorias = ListarCategorias();
 
-            var qrySecao = from p in categorias
-                           group p by p.Secao into g
-                           select new RegistroCategoria
-                           {
-                               Secao = g.Key
-                           };
-            var secoes = qrySecao.ToList();
             TransformData transformData = new TransformData();
             ModelBuilder modelBuilder = new ModelBuilder();
             List<Task> lstTsks = new List<Task>();
 
             foreach (var filial in filiais)
-            {
-                foreach (var secao in secoes)
-                {    
-                    var qryCategoria = from p in categorias
-                                           where p.Secao == secao.Secao
-                                           select p;
-                    var categoriaSecao = qryCategoria.ToList();                                       
-                    var tsk = Task.Run(() =>
-                    {                        
-                        foreach (var categoria in categoriaSecao)
-                        {
+            {           
+                if (filial.Filial >=5)
+                {                                          
+                    foreach (var categoria in categorias)
+                    {
+                        logger.LogInformation($"Treina Filial {filial.Filial} Categoria {categoria.Secao}/{categoria.Grupo}/{categoria.SubGrupo}");
+
+                        var tsk = Task.Run(() => {
                             try
                             {
                                 var historico = ListarHistorico(filial.Filial, categoria.Secao, categoria.Grupo, categoria.SubGrupo);
-
+        
                                 if (historico != null && historico.Count > 365 && historico.Sum(m => m.Valor) > 0)
                                 {                                
                                     var transformedData = transformData.TransformaDados(historico);
-
+        
                                     var modelo = modelBuilder.CreateModel(transformedData);
-
                                     modelo.Filial = filial.Filial;
                                     modelo.Secao = categoria.Secao;
                                     modelo.Grupo = categoria.Grupo;
                                     modelo.SubGrupo = categoria.SubGrupo;
                                     GravarModelo(modelo);                                
                                 }
+                                else
+                                {
+                                    logger.LogInformation($"Treina Filial {filial.Filial} Categoria {categoria.Secao}/{categoria.Grupo}/{categoria.SubGrupo} sem historico!");
+                                }
+
                                 historico = null;
                             }
                             catch (Exception ex) 
                             { 
-                                //throw ex;
-                                ex = null;
+                                 logger.LogError(ex,"Treinna modelo");
                             }
-                        }
-                    });
-
-                    lstTsks.Add(tsk);
-                }
+                        });   
+                        lstTsks.Add(tsk);
+    
+                        if (lstTsks.Count >= 10)
+                        {
+                            await Task.WhenAll(lstTsks);
+    
+                            lstTsks = new List<Task>();
+                        }                 
+                    }  
+                }              
             }
-
-            await Task.WhenAll(lstTsks);
+             
+            if (lstTsks.Count > 0)
+                await Task.WhenAll(lstTsks);
         }
     }
 }

@@ -11,6 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Serialization;
 using ProjetoIntregador.BackgroundService;
+using ProjetoIntregador.Dados.Bll;
+using ProjetoIntregador.Dados.Bll.Contract;
 
 namespace ProjetoIntregador
 {
@@ -38,6 +40,7 @@ namespace ProjetoIntregador
             services.AddKendo();
             services.AddSingleton(Configuration);
             services.AddSingleton(services);
+            services.AddScoped<ITreinarModelos, TreinarModelos>();
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, TreinarModelosAtividade>();
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, EfetuaPrevisaoAtividade>();
         }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ProjetoIntregador.BackgroundService.Contract;
 using ProjetoIntregador.Dados.Bll;
 using ProjetoIntregador.Dados.Model;
@@ -16,13 +17,16 @@ namespace ProjetoIntregador.Controllers
         private readonly IConfiguration configuration;
         private readonly IServiceCollection services;
         private readonly IServiceProvider serviceProvider;
+        private readonly ILogger<HomeController> logger;
         public HomeController(IConfiguration configuration,
             IServiceCollection services,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            ILogger<HomeController> logger)
         {
             this.configuration = configuration;
             this.services = services;
             this.serviceProvider = serviceProvider;
+            this.logger = logger;
         }
         public IActionResult Index()
         {
@@ -50,21 +54,29 @@ namespace ProjetoIntregador.Controllers
 
         public IActionResult GetModelos()
         {
-            EfetuarPrevisao efetuaModelos = new EfetuarPrevisao(configuration);
-            var modelos = efetuaModelos.CarregaModeloMetrica();
-
-            if (modelos == null)
+            try
             {
-                modelos = new RegistroModelo();
+                EfetuarPrevisao efetuaModelos = new EfetuarPrevisao(configuration, logger);
+                var modelos = efetuaModelos.CarregaModeloMetrica();
+
+                if (modelos == null)
+                {
+                    modelos = new RegistroModelo();
+                }
+
+                Dictionary<string, object> param = new Dictionary<string, object>
+                {
+                    { "filiais", modelos.Filial.ToString() },
+                    { "modelos", modelos.Secao.ToString() },
+                    { "rmse", modelos.RootMeanSquaredError.ToString("N2") }
+                };
+                return  Json(param);
             }
-
-            Dictionary<string, object> param = new Dictionary<string, object>
+            catch(Exception ex)
             {
-                { "filiais", modelos.Filial.ToString() },
-                { "modelos", modelos.Secao.ToString() },
-                { "rmse", modelos.RootMeanSquaredError.ToString("N2") }
-            };
-            return  Json(param);
+                logger.LogError(ex, "Consulta modelos");
+                throw ex;
+            }
         }
     }
 }

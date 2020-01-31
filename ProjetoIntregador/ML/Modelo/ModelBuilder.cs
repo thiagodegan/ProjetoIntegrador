@@ -65,7 +65,7 @@ namespace ProjetoIntregador.ML.Modelo
 
         private IEstimator<ITransformer> BuildTrainingPipeline(MLContext mlContext)
         {
-            var dataProcessPipeline = mlContext.Transforms.Concatenate("Features", new[] { "ANO", "MES_FEV", "MES_MAR", "MES_ABR", "MES_MAI", "MES_JUN", "MES_JUL", "MES_AGO", "MES_SET", "MES_OUT", "MES_NOV", "MES_DEZ", "SEM_MES_SEG", "SEM_MES_TER", "SEM_MES_QUA", "SEM_MES_QUI", "DIA_SEG", "DIA_TER", "DIA_QUA", "DIA_QUI", "DIA_SEX", "DIA_SAB" });
+            var dataProcessPipeline = mlContext.Transforms.Concatenate("Features", new[] { "ANO", "MES_FEV", "MES_MAR", "MES_ABR", "MES_MAI", "MES_JUN", "MES_JUL", "MES_AGO", "MES_SET", "MES_OUT", "MES_NOV", "MES_DEZ", "SEM_MES_SEG", "SEM_MES_TER", "SEM_MES_QUA", "SEM_MES_QUI", "DIA_SEG", "DIA_TER", "DIA_QUA", "DIA_QUI", "DIA_SEX", "DIA_SAB", "FERIADO" });
             var trainer = mlContext.Regression.Trainers.LightGbm(labelColumnName: "Label", featureColumnName: "Features", minimumExampleCountPerLeaf: 2, learningRate: 0.001, numberOfIterations: 200);
             var trainingPipeline = dataProcessPipeline.Append(trainer);
             return trainingPipeline;

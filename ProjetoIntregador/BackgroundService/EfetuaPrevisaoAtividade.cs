@@ -31,7 +31,7 @@ namespace ProjetoIntregador.BackgroundService
             {
                 loggerService.LogDebug("Executa atividade: {0}", NomeAtividade);
 
-                EfetuarPrevisao treinarModelos = new EfetuarPrevisao(configuration);
+                EfetuarPrevisao treinarModelos = new EfetuarPrevisao(configuration, loggerService);
 
                 await treinarModelos.EfetuaPrevisao(new DateTime(2019,8,1), new DateTime(2019,9,30));
 

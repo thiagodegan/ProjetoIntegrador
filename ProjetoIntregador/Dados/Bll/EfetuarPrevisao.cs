@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using ProjetoIntregador.Dados.Dal;
 using ProjetoIntregador.Dados.Model;
 using ProjetoIntregador.ML.Consumo;
@@ -15,13 +16,15 @@ namespace ProjetoIntregador.Dados.Bll
     public class EfetuarPrevisao
     {
         private readonly IConfiguration configuration;
-        public EfetuarPrevisao(IConfiguration configuration)
+        private readonly ILogger logger;
+        public EfetuarPrevisao(IConfiguration configuration, ILogger logger)
         {
             this.configuration = configuration;
+            this.logger = logger;
         }
         public List<RegistroModelo> CarregaModelos()
         {
-            DalConnection dal = new DalConnection(configuration);
+            DalConnection dal = new DalConnection(configuration, logger);
             List<RegistroModelo> registroModelos = null;
 
             try
@@ -77,7 +80,7 @@ namespace ProjetoIntregador.Dados.Bll
 
         public List<RegistroModelo> CarregaModelosMetricas()
         {
-            DalConnection dal = new DalConnection(configuration);
+            DalConnection dal = new DalConnection(configuration, logger);
             List<RegistroModelo> registroModelos = null;
 
             try
@@ -133,7 +136,7 @@ namespace ProjetoIntregador.Dados.Bll
 
         private bool VerificaFeriado (DateTime dia, int Filial)
         {
-            DalConnection dal = new DalConnection(configuration);
+            DalConnection dal = new DalConnection(configuration, logger);
 
             try 
             {
@@ -207,7 +210,7 @@ namespace ProjetoIntregador.Dados.Bll
 
         private void GravaPrevisoes(List<RegistroCmv> previsoes, RegistroModelo modelo)
         {
-            DalConnection dal = new DalConnection(configuration);
+            DalConnection dal = new DalConnection(configuration, logger);
 
             try
             {
@@ -274,15 +277,21 @@ namespace ProjetoIntregador.Dados.Bll
                         GravaPrevisoes(previsoes, modelo);
                     });
                     lstTasks.Add(tsk);
+                    if (lstTasks.Count > 10)
+                    {
+                        await Task.WhenAll(lstTasks);
+                        lstTasks = new List<Task>();
+                    }
                 }
-
-                await Task.WhenAll(lstTasks);
+                
+                if (lstTasks.Count > 0)
+                    await Task.WhenAll(lstTasks);
             }
         }
 
         public RegistroModelo CarregaModeloMetrica()
         {
-            DalConnection dal = new DalConnection(configuration);
+            DalConnection dal = new DalConnection(configuration, logger);
 
             try
             {
@@ -328,7 +337,7 @@ namespace ProjetoIntregador.Dados.Bll
 
         public List<RegistroCmv> CarregaPrevisao(DateTime dtIni, DateTime dtFim, int[] Filiais, int[] Categorias)
         {
-            DalConnection dal = new DalConnection(configuration);
+            DalConnection dal = new DalConnection(configuration, logger);
 
             try
             {
