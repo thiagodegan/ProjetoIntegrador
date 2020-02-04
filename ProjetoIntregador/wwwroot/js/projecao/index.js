@@ -53,6 +53,33 @@
         dataSource: dataSourceCategorias
     });
 
+    function atualizaQuadros() {
+        var data = dataSource.data();
+        let realizado = 0;
+        let previsto = 0;
+        let erro = 0;
+        var realizadoElement = document.getElementById("realizadoCard");
+        var previstoElement = document.getElementById("previstoCard");
+        var erroElement = document.getElementById("erroCard");
+
+        if (data !== undefined && data !== null) {
+            for(let i = 0; i < data.length; i++) {
+                if (!data[i].ValorIsNull) {
+                    realizado = realizado + data[i].ValorNull;
+                    previsto = previsto + data[i].Previsao;
+                }
+            }
+        }
+
+        if (realizado > 0) {
+            erro = (previsto-realizado)/realizado;
+        }
+
+        realizadoElement.innerHTML = Math.round(realizado);
+        previstoElement.innerHTML = Math.round(previsto);
+        erroElement.innerHTML = Math.round(erro * 10000)/100 + "%";
+    }
+
     var dataSource = new kendo.data.DataSource({
         transport: {
             read: function (options) {
@@ -72,6 +99,7 @@
                     success: function (result) {
                         // notify the data source that the request succeeded
                         options.success(result);
+                        atualizaQuadros();
                     },
                     error: function (result) {
                         // notify the data source that the request failed
@@ -129,6 +157,30 @@
             format: "{0}",
             template: "#= series.name #: #= value #"
         }
+    });
+
+    $("#dgrid").kendoGrid({
+        groupable: false,
+        sortable: true,
+        pageable: {
+            refresh: true,
+            pageSizes: true,
+            buttonCount: 5
+        },
+        columns: [{
+            field: "Categoria",
+            title: "Categoria",
+            width: 500
+        }, {
+            field: "Realizado",
+            title: "Realizado"
+        }, {
+            field: "Previsto",
+            title: "Previsto"
+        },{
+            field: "Erro",
+            title: "Erro"
+        }]
     });
 
     var chart = $("#chart").data("kendoChart");

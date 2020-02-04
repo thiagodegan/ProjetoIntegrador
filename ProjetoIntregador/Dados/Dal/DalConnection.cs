@@ -20,13 +20,26 @@ namespace ProjetoIntregador.Dados.Dal
             this.logger = logger;
         }
 
-        private OracleConnection GetConnection()
+        private OracleConnection GetConnection(int tentativa = 0)
         {
             try
             {
                 OracleConnection connection = new OracleConnection(configuration.GetConnectionString("GSRetail"));
                 connection.Open();
                 return connection;
+            }
+            catch (OracleException ex)
+            {
+                if (ex.Message.ToLower().Contains("timeout") && tentativa < 10)
+                {
+                    logger.LogError(ex, $"Time out ao consultar abrir conexao! Tentativa: {tentativa + 1}");
+                    Task.Delay(500).Wait();
+                    return GetConnection(tentativa+1);
+                }
+                else
+                {
+                    throw ex;
+                }
             }
             catch(Exception ex)
             {

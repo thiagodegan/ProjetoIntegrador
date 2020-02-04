@@ -98,7 +98,19 @@ namespace ProjetoIntregador.ML.Modelo
         [ColumnName("FERIADO"), LoadColumn(22)]
         public float FERIADO { get; set; }
 
-        [ColumnName("Label"), LoadColumn(23)]
+        [ColumnName("MAXTEMPC"), LoadColumn(23)]
+        public float MAXTEMPC { get; set; }
+
+        [ColumnName("MINTEMPC"), LoadColumn(24)]
+        public float MINTEMPC { get; set; }
+
+        [ColumnName("AVGTEMPC"), LoadColumn(25)]
+        public float AVGTEMPC { get; set; }
+
+        [ColumnName("PRECIPMM"), LoadColumn(26)]
+        public float PRECIPMM { get; set; }
+
+        [ColumnName("Label"), LoadColumn(27)]
         public float Label { get; set; }
     }
 }

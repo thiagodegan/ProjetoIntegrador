@@ -171,6 +171,58 @@ namespace ProjetoIntregador.Dados.Bll
             }
         }
 
+        private RegistroCmv CarregaClima(DateTime dia, int Filial)
+        {
+            DalConnection dal = new DalConnection(configuration, logger);
+            RegistroCmv result = new RegistroCmv();
+
+            try 
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine("SELECT c.maxtempc, c.mintempc, c.avgtempc, c.precipmm");
+                sb.AppendLine("FROM GS_MVW_FILIAIS f");
+                sb.AppendLine("INNER JOIN clima c on c.city = f.cidade");
+                sb.AppendLine("                   and c.dia = &DIA");
+                sb.AppendLine("WHERE f.codigo = &FIL");
+
+                Dictionary<string, object> param = new Dictionary<string, object> 
+                {
+                    { "DIA", ((dia.Year-1900)*100+dia.Month)*100+dia.Day },
+                    { "FIL", Filial}
+                };
+
+                var dt = dal.ExecuteQuery(sb, param);
+
+                if (dt != null && dt.Rows.Count > 0)
+                {
+                    foreach(DataRow dr in dt.Rows)
+                    {
+                        foreach(DataColumn dc in dt.Columns)
+                        {
+                            switch (dc.ColumnName.ToUpper())
+                            {
+                                case "MAXTEMPC": result.MaxTempC = dr[dc] != DBNull.Value ? (float)Convert.ToDouble(dr[dc]) : 0; break;
+                                case "MINTEMPC": result.MinTempC = dr[dc] != DBNull.Value ? (float)Convert.ToDouble(dr[dc]) : 0; break;
+                                case "AVGTEMPC": result.AvgTempC = dr[dc] != DBNull.Value ? (float)Convert.ToDouble(dr[dc]) : 0; break;
+                                case "PRECIPMM": result.PrecipMm = dr[dc] != DBNull.Value ? (float)Convert.ToDouble(dr[dc]) : 0; break;
+                                default: break;
+                            }
+                        }
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                dal = null;
+            }
+        }
+
         private List<RegistroCmv> EfetuaPrevisao(DateTime dtIni, DateTime dtFim, RegistroModelo modelo)
         {
             ConsomeModel ml = new ConsomeModel();
@@ -188,7 +240,16 @@ namespace ProjetoIntregador.Dados.Bll
 
             foreach (var registro in registroCmvs)
             {
-                registro.Feriado = VerificaFeriado(registro.Dia, modelo.Filial);                    
+                registro.Feriado = VerificaFeriado(registro.Dia, modelo.Filial);  
+                var clima = CarregaClima(registro.Dia, modelo.Filial);  
+                
+                if (clima != null)
+                {
+                    registro.MaxTempC = clima.MaxTempC;
+                    registro.MinTempC = clima.MinTempC;
+                    registro.AvgTempC = clima.AvgTempC;
+                    registro.PrecipMm = clima.PrecipMm;
+                }                
             }
 
             modelInputs = transformData.TransformaDados(registroCmvs);
@@ -273,11 +334,13 @@ namespace ProjetoIntregador.Dados.Bll
                 foreach (var modelo in lstModelos)
                 {
                     var tsk = Task.Run(() => {
+                        logger.LogInformation($"Inicio previsao Filial: {modelo.Filial} Categoria {modelo.Secao}/{modelo.Grupo}/{modelo.SubGrupo}");
                         var previsoes = EfetuaPrevisao(dtIni, dtFim, modelo);
                         GravaPrevisoes(previsoes, modelo);
+                        logger.LogInformation($"Fim previsao Filial: {modelo.Filial} Categoria {modelo.Secao}/{modelo.Grupo}/{modelo.SubGrupo}");
                     });
                     lstTasks.Add(tsk);
-                    if (lstTasks.Count > 20)
+                    if (lstTasks.Count >= 50)
                     {
                         await Task.WhenAny(lstTasks);
                         List<Task> lstRmv = new List<Task>();

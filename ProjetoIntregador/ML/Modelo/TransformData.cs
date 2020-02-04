@@ -48,6 +48,10 @@ namespace ProjetoIntregador.ML.Modelo
                 SEM_MES_QUA = GetWeekNumberOfMonth(registroCmv.Dia) == 4 ? 1 : 0,
                 SEM_MES_QUI = GetWeekNumberOfMonth(registroCmv.Dia) == 5 ? 1 : 0,
                 FERIADO = registroCmv.Feriado ? 1 : 0,
+                MAXTEMPC = registroCmv.MaxTempC,
+                MINTEMPC = registroCmv.MinTempC,
+                AVGTEMPC = registroCmv.AvgTempC,
+                PRECIPMM = registroCmv.PrecipMm,
             };
 
             return modelOutput;

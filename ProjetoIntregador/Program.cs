@@ -42,6 +42,7 @@ namespace ProjetoIntregador
                 {
                     logging.ClearProviders();
                     logging.SetMinimumLevel(LogLevel.Trace);
-                });
+                })
+                .UseNLog();
     }
 }

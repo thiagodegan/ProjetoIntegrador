@@ -10,6 +10,7 @@ using System.Data;
 using ProjetoIntregador.ML.Modelo;
 using ProjetoIntregador.Dados.Bll.Contract;
 using Microsoft.Extensions.Logging;
+using Oracle.ManagedDataAccess.Client;
 
 namespace ProjetoIntregador.Dados.Bll
 {
@@ -150,8 +151,15 @@ namespace ProjetoIntregador.Dados.Bll
                 sb.AppendLine("select RMS7TO_DATE(g.dia) DIA,");
                 sb.AppendLine("       case when df.dia_meta is null");
                 sb.AppendLine("              and d.dia_meta is null then 0 else 1 end feriado,");
+                sb.AppendLine("       C.MAXTEMPC,");
+                sb.AppendLine("       C.MINTEMPC,");
+                sb.AppendLine("       C.AVGTEMPC,");
+                sb.AppendLine("       C.PRECIPMM,");
                 sb.AppendLine("       G.VDA_CMV VALOR");
                 sb.AppendLine("from gs_agg_coml_sgrp_dia g");
+                sb.AppendLine("inner join gs_mvw_filiais f on f.codigo = g.filial");
+                sb.AppendLine("left join clima c on c.city = f.cidade");
+                sb.AppendLine("                 and c.dia = g.dia");
                 sb.AppendLine("left join gs_meta_diasatipico_filial df on df.filial = g.filial");
                 sb.AppendLine("                                        and df.dia_meta = rms7to_date(g.dia)");
                 sb.AppendLine("left join gs_meta_diasatipico d on d.dia_meta = rms7to_date(g.dia)");
@@ -185,6 +193,10 @@ namespace ProjetoIntregador.Dados.Bll
                                 case "DIA": registro.Dia = Convert.ToDateTime(dataRow[dataColumn]); break;
                                 case "VALOR": registro.Valor = (float)Convert.ToDouble(dataRow[dataColumn]); break;
                                 case "FERIADO": registro.Feriado = Convert.ToInt32(dataRow[dataColumn]) == 1; break;
+                                case "MAXTEMPC": registro.MaxTempC = dataRow[dataColumn] != DBNull.Value ? (float)Convert.ToDouble(dataRow[dataColumn]) : 0; break;
+                                case "MIMTEMPC": registro.MinTempC = dataRow[dataColumn] != DBNull.Value ? (float)Convert.ToDouble(dataRow[dataColumn]) : 0; break;
+                                case "AVGTEMPC": registro.AvgTempC = dataRow[dataColumn] != DBNull.Value ? (float)Convert.ToDouble(dataRow[dataColumn]) : 0; break;
+                                case "PRECIPMM": registro.PrecipMm = dataRow[dataColumn] != DBNull.Value ? (float)Convert.ToDouble(dataRow[dataColumn]) : 0; break;
                                 default:
                                     break;
                             }
@@ -195,6 +207,19 @@ namespace ProjetoIntregador.Dados.Bll
                 }
 
                 return registroCmvs;
+            }
+            catch (OracleException ex)
+            {
+                if (ex.Message.ToLower().Contains("timeout"))
+                {
+                    logger.LogError(ex, $"Time out ao consultar historico, sera realizada uma nova tentativa! Filial: {Filial} Categoria: {Secao}/{Grupo}/{SubGrupo}");
+                    Task.Delay(1000).Wait();
+                    return ListarHistorico(Filial, Secao, Grupo, SubGrupo);
+                }
+                else
+                {
+                    throw ex;
+                }
             }
             catch
             {
@@ -307,12 +332,13 @@ namespace ProjetoIntregador.Dados.Bll
                             }
                             catch (Exception ex) 
                             { 
-                                 logger.LogError(ex,"Treinna modelo");
+                                 logger.LogError(ex,$"Treina Filial {filial.Filial} Categoria {categoria.Secao}/{categoria.Grupo}/{categoria.SubGrupo}");
                             }
                         });   
+
                         lstTsks.Add(tsk);
     
-                        if (lstTsks.Count >= 20)
+                        if (lstTsks.Count >= 50)
                         {
                             await Task.WhenAny(lstTsks);
 
