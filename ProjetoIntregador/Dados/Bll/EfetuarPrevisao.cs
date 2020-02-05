@@ -326,42 +326,56 @@ namespace ProjetoIntregador.Dados.Bll
 
         public async Task EfetuaPrevisao(DateTime dtIni, DateTime dtFim)
         {
-            var lstModelos = CarregaModelos();
-
-            if (lstModelos != null && lstModelos.Any())
+            try
             {
-                List<Task> lstTasks = new List<Task>();
-                foreach (var modelo in lstModelos)
+                var lstModelos = CarregaModelos();
+
+                if (lstModelos != null && lstModelos.Any())
                 {
-                    var tsk = Task.Run(() => {
-                        logger.LogInformation($"Inicio previsao Filial: {modelo.Filial} Categoria {modelo.Secao}/{modelo.Grupo}/{modelo.SubGrupo}");
-                        var previsoes = EfetuaPrevisao(dtIni, dtFim, modelo);
-                        GravaPrevisoes(previsoes, modelo);
-                        logger.LogInformation($"Fim previsao Filial: {modelo.Filial} Categoria {modelo.Secao}/{modelo.Grupo}/{modelo.SubGrupo}");
-                    });
-                    lstTasks.Add(tsk);
-                    if (lstTasks.Count >= 50)
+                    var qryFil = from p in lstModelos
+                                group p by p.Filial into g
+                                select new RegistroModelo
+                                {
+                                    Filial = g.Key
+                                };
+
+                    List<Task> lstTasks = new List<Task>();
+
+                    foreach (var filial in qryFil)
                     {
-                        await Task.WhenAny(lstTasks);
-                        List<Task> lstRmv = new List<Task>();
+                        int codigo = filial.Filial;
 
-                        foreach (var tskComplet in lstTasks)
-                        {
-                            if (tskComplet.IsCompleted)
+                        var tsk = Task.Run(()=>{
+                            var filialModels = lstModelos.Where(m=>m.Filial == codigo).ToList();
+                            foreach (var modelo in filialModels)
                             {
-                                lstRmv.Add(tskComplet);
+                                try
+                                {                        
+                                    logger.LogInformation($"Inicio previsao Filial: {modelo.Filial} Categoria {modelo.Secao}/{modelo.Grupo}/{modelo.SubGrupo}");
+                                    var previsoes = EfetuaPrevisao(dtIni, dtFim, modelo);
+                                    logger.LogInformation($"Fim previsao Filial: {modelo.Filial} Categoria {modelo.Secao}/{modelo.Grupo}/{modelo.SubGrupo}");
+                                    logger.LogInformation($"Inicio grava previsao Filial: {modelo.Filial} Categoria {modelo.Secao}/{modelo.Grupo}/{modelo.SubGrupo}");
+                                    GravaPrevisoes(previsoes, modelo);
+                                    logger.LogInformation($"Fim grava previsao Filial: {modelo.Filial} Categoria {modelo.Secao}/{modelo.Grupo}/{modelo.SubGrupo}");
+                                }
+                                catch (Exception ex)
+                                {
+                                    logger.LogError(ex, $"Erro na previsao Filial: {modelo.Filial} Categoria {modelo.Secao}/{modelo.Grupo}/{modelo.SubGrupo}");
+                                }
                             }
-                        }
+                            return Task.CompletedTask;
+                        });
 
-                        foreach(var itemRmv in lstRmv)
-                        {
-                            lstTasks.Remove(itemRmv);
-                        }
+                        lstTasks.Add(tsk);
                     }
+
+                    if (lstTasks.Count > 0)
+                        await Task.WhenAll(lstTasks);
                 }
-                
-                if (lstTasks.Count > 0)
-                    await Task.WhenAll(lstTasks);
+            }
+            catch(Exception ex)
+            {
+                logger.LogError(ex, "Erro ao gerar previsoes");
             }
         }
 
@@ -495,6 +509,119 @@ namespace ProjetoIntregador.Dados.Bll
                             switch (dc.ColumnName.ToUpper())
                             {
                                 case "DIA": registroCmv.Dia = Convert.ToDateTime(dr[dc]); break;
+                                case "PREVISAO": registroCmv.Previsao = Convert.ToSingle(dr[dc]); break;
+                                case "CMV_REAL":
+                                    registroCmv.ValorIsNull = dr[dc] == DBNull.Value;
+                                    registroCmv.Valor = dr[dc] != DBNull.Value ? Convert.ToSingle(dr[dc]) : 0;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+
+                        registroCmvs.Add(registroCmv);
+                    }
+                }
+
+                return registroCmvs;
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                dal = null;
+            }
+        }
+
+        public List<RegistroCmv> CarregaPrevisaoDetalhada(DateTime dtIni, DateTime dtFim, int[] Filiais, int[] Categorias)
+        {
+            DalConnection dal = new DalConnection(configuration, logger);
+
+            try
+            {
+                StringBuilder sb = new StringBuilder();                
+                sb.AppendLine("select p.filial, p.secao, p.grupo, p.subgrupo,");
+                sb.AppendLine("       sum(p.cmv) previsao,");
+                sb.AppendLine("       sum((r.vda_cmv)) cmv_real");
+                sb.AppendLine("from dsdh_previsao_cmv p");
+                sb.AppendLine("inner join gs_agg_coml_sgrp_dia r on r.dia = p.dia");
+                sb.AppendLine("                                and r.filial = p.filial");
+                sb.AppendLine("                                and r.secao = p.secao");
+                sb.AppendLine("                                and r.grp = p.grupo");
+                sb.AppendLine("                                and r.sgrp = p.subgrupo");
+                sb.AppendLine("where p.dia between &DTINI and &DTFIM");
+
+                if (Filiais != null && Filiais.Length > 0)
+                {
+                    sb.AppendLine("and p.filial in (");
+
+                    for (int i = 0; i < Filiais.Length; i++)
+                    {
+                        sb.Append($"{Filiais[i]}");
+                        if (i+1<Filiais.Length)
+                        {
+                            sb.Append(",");
+                        }
+                    }
+
+                    sb.AppendLine(")");
+                }
+
+                if (Categorias != null && Categorias.Length > 0)
+                {
+                    sb.AppendLine("and (p.secao, p.grupo, p.subgrupo ) in (");
+
+                    for (int i = 0; i < Categorias.Length; i++)
+                    {
+                        int secao = 0;
+                        int grupo = 0;
+                        int subgrupo = 0;
+
+                        secao = (int)Math.Truncate((decimal)Categorias[i] / 1000000);
+                        grupo = (int)Math.Truncate(Math.Truncate((decimal)Categorias[i] / 1000) % 1000);
+                        subgrupo = (int)Math.Truncate((decimal)Categorias[i] % 1000);
+
+                        sb.AppendLine($"select {secao} s, {grupo} g, {subgrupo} sg from dual");
+
+                        if (i+1<Categorias.Length)
+                        {
+                            sb.AppendLine("UNION ALL");
+                        }
+                    }
+
+                    sb.AppendLine(")");
+                }
+
+                sb.AppendLine("group by p.filial, p.secao, p.grupo, p.subgrupo");
+                sb.AppendLine("order by p.filial, p.secao, p.grupo, p.subgrupo");
+
+                Dictionary<string, object> param = new Dictionary<string, object>
+                {
+                    { "DTINI", ((dtIni.Year-1900)*100+dtIni.Month)*100+dtIni.Day },
+                    { "DTFIM", ((dtFim.Year-1900)*100+dtFim.Month)*100+dtFim.Day },
+                };
+
+                var dt = dal.ExecuteQuery(sb, param);
+
+                List<RegistroCmv> registroCmvs = null;
+
+                if (dt != null && dt.Rows.Count > 0)
+                {
+                    registroCmvs = new List<RegistroCmv>();
+                    foreach (DataRow dr in dt.Rows)
+                    {
+                        RegistroCmv registroCmv = new RegistroCmv();
+
+                        foreach (DataColumn dc in dt.Columns)
+                        {
+                            switch (dc.ColumnName.ToUpper())
+                            {
+                                case "FILIAL": registroCmv.Filial = Convert.ToInt32(dr[dc]); break;
+                                case "SECAO": registroCmv.Secao = Convert.ToInt32(dr[dc]); break;
+                                case "GRUPO": registroCmv.Grupo = Convert.ToInt32(dr[dc]); break;
+                                case "SUBGRUPO": registroCmv.SubGrupo = Convert.ToInt32(dr[dc]); break;
                                 case "PREVISAO": registroCmv.Previsao = Convert.ToSingle(dr[dc]); break;
                                 case "CMV_REAL":
                                     registroCmv.ValorIsNull = dr[dc] == DBNull.Value;

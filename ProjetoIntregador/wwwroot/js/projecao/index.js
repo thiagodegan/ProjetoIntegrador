@@ -111,6 +111,37 @@
         }
     });
 
+    var dataSourceGrid = new kendo.data.DataSource({
+        transport: {
+            read: function (options) {
+                // make JSONP request to https://demos.telerik.com/kendo-ui/service/products
+                var myJson = {
+                    "DtIni": $("#dtini").val(),
+                    "DtFim": $("#dtfim").val(),
+                    "Filiais": $("#filiais").data("kendoMultiSelect").value(),
+                    "Categorias": $("#categorias").data("kendoMultiSelect").value()
+                };
+                $.ajax({
+                    type: "POST",
+                    url: BASE_URL+"/getdetalhes",
+                    contentType: "application/json",
+                    dataType: "json", // "jsonp" is required for cross-domain requests; use "json" for same-domain requests
+                    data: JSON.stringify(myJson),
+                    success: function (result) {
+                        // notify the data source that the request succeeded
+                        options.success(result);
+                    },
+                    error: function (result) {
+                        // notify the data source that the request failed
+                        options.error(result);
+                    }
+                });
+            },
+            cache: false
+        },
+        group: { field: "Nome" }
+    });
+
     $("#chart").kendoChart({
         title: {
             text: "CMV Realizado x Previsto"
@@ -160,26 +191,30 @@
     });
 
     $("#dgrid").kendoGrid({
-        groupable: false,
+        groupable: true,
         sortable: true,
         pageable: {
-            refresh: true,
-            pageSizes: true,
-            buttonCount: 5
+            pageSize: 5,
+            buttonCount: 5,
+            pageSizes: [5, 20, 50],
         },
-        columns: [{
+        columns: [ {
             field: "Categoria",
             title: "Categoria",
             width: 500
         }, {
-            field: "Realizado",
+            field: "ValorNull",
             title: "Realizado"
         }, {
-            field: "Previsto",
+            field: "Previsao",
             title: "Previsto"
         },{
             field: "Erro",
-            title: "Erro"
+            title: "Erro",
+            format: "{0:p2}",
+            sortable: {
+                initialDirection: "desc"
+              }
         }]
     });
 
@@ -187,8 +222,12 @@
 
     chart.setDataSource(dataSource);
 
+    var dgrid = $("#dgrid").data("kendoGrid");
+    dgrid.setDataSource(dataSourceGrid);
 
-    $("#BtnFiltrar").click(function () {
+
+    $("#BtnFiltrar").click(function () {        
+        dataSourceGrid.read();
         dataSource.read();
     });
 });

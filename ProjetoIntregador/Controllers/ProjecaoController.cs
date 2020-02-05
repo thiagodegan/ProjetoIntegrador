@@ -61,6 +61,60 @@ namespace ProjetoIntregador.Controllers
         }
 
         [HttpPost]
+        public IActionResult Getdetalhes([FromBody]dynamic filtro)
+        {
+            EfetuarPrevisao efetuarPrevisao = new EfetuarPrevisao(configuration, logger);
+
+            try
+            {
+                ProjecaoFiltroViewModel filtroViewModel = JsonConvert.DeserializeObject<ProjecaoFiltroViewModel>(filtro.ToString());
+
+                var dados = efetuarPrevisao.CarregaPrevisaoDetalhada(filtroViewModel.DtIniTrat, filtroViewModel.DtFimTrat, filtroViewModel.Filiais, filtroViewModel.Categorias);
+
+                if (dados == null)
+                {
+                    dados = new List<RegistroCmv>();
+                }
+
+                var filiais = treinarModelos.ListarFiliais();
+                var categorias = treinarModelos.ListarCategorias();
+
+                foreach(var previsao in dados)
+                {
+                    var qryFil = from p in filiais
+                                 where p.Filial == previsao.Filial
+                                 select p;
+                    
+                    if (qryFil != null && qryFil.Any())
+                    {
+                        previsao.Nome = qryFil.First().Nome;
+                    }
+
+                    var qrySec = from p in categorias
+                                 where p.Secao == previsao.Secao
+                                 && p.Grupo == previsao.Grupo
+                                 && p.SubGrupo == previsao.SubGrupo
+                                 select p;
+                    
+                    if (qrySec != null && qrySec.Any())
+                    {
+                        previsao.Categoria = qrySec.First().Categoria;
+                    }
+                }
+
+                return Json(dados);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                efetuarPrevisao = null;
+            }
+        }
+
+        [HttpPost]
         public IActionResult GetFiliais()
         {            
             try

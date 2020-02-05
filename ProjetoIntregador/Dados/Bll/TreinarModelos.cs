@@ -168,6 +168,7 @@ namespace ProjetoIntregador.Dados.Bll
                 sb.AppendLine("and g.grp = &GRUPO");
                 sb.AppendLine("and g.sgrp = &SUBGRUPO");
                 sb.AppendLine("and g.dia between 1150101 and 1190831"); // TODO: REMOVER ESSE FILTRO DE DATA EM PRODUÇÃO
+                sb.AppendLine("and g.vda_cmv > 0");
                 sb.AppendLine("order by g.dia");
 
                 Dictionary<string, object> param = new Dictionary<string, object>
@@ -302,25 +303,25 @@ namespace ProjetoIntregador.Dados.Bll
             foreach (var filial in filiais)
             {           
                 if (filial.Filial >=5)
-                {                                          
-                    foreach (var categoria in categorias)
-                    {
-                        logger.LogInformation($"Treina Filial {filial.Filial} Categoria {categoria.Secao}/{categoria.Grupo}/{categoria.SubGrupo}");
-
-                        var tsk = Task.Run(() => {
+                {       
+                    var tsk = Task.Run(() => {
+                        foreach (var categoria in categorias)
+                        {
                             try
                             {
+                                logger.LogInformation($"Inicio Treina Filial {filial.Filial} Categoria {categoria.Secao}/{categoria.Grupo}/{categoria.SubGrupo}");
                                 var historico = ListarHistorico(filial.Filial, categoria.Secao, categoria.Grupo, categoria.SubGrupo);
         
-                                if (historico != null && historico.Count > 365 && historico.Sum(m => m.Valor) > 0)
+                                if (historico != null && historico.Where(f=> f.Dia >= new DateTime(2018,1,1)).Count() > 365 && historico.Where(f=> f.Dia >= new DateTime(2019,1,1)).Sum(m => m.Valor) > 1000)
                                 {                                
                                     var transformedData = transformData.TransformaDados(historico);
-        
+                                    logger.LogInformation($"Cria modelo Filial {filial.Filial} Categoria {categoria.Secao}/{categoria.Grupo}/{categoria.SubGrupo}");
                                     var modelo = modelBuilder.CreateModel(transformedData);
                                     modelo.Filial = filial.Filial;
                                     modelo.Secao = categoria.Secao;
                                     modelo.Grupo = categoria.Grupo;
                                     modelo.SubGrupo = categoria.SubGrupo;
+                                    logger.LogInformation($"Grava modelo Filial {filial.Filial} Categoria {categoria.Secao}/{categoria.Grupo}/{categoria.SubGrupo}");
                                     GravarModelo(modelo);                                
                                 }
                                 else
@@ -329,35 +330,17 @@ namespace ProjetoIntregador.Dados.Bll
                                 }
 
                                 historico = null;
+                                logger.LogInformation($"Fim Treina Filial {filial.Filial} Categoria {categoria.Secao}/{categoria.Grupo}/{categoria.SubGrupo}");
+                                
                             }
                             catch (Exception ex) 
                             { 
-                                 logger.LogError(ex,$"Treina Filial {filial.Filial} Categoria {categoria.Secao}/{categoria.Grupo}/{categoria.SubGrupo}");
+                                    logger.LogError(ex,$"Treina Filial {filial.Filial} Categoria {categoria.Secao}/{categoria.Grupo}/{categoria.SubGrupo}");
                             }
-                        });   
+                        }
+                    });   
 
-                        lstTsks.Add(tsk);
-    
-                        if (lstTsks.Count >= 50)
-                        {
-                            await Task.WhenAny(lstTsks);
-
-                            List<Task> lstRmv = new List<Task>();
-    
-                            foreach (var tskComplet in lstTsks)
-                            {
-                                if (tskComplet.IsCompleted)
-                                {
-                                    lstRmv.Add(tskComplet);
-                                }
-                            }
-
-                            foreach (var tskRmv in lstRmv)
-                            {
-                                lstTsks.Remove(tskRmv);
-                            }
-                        }                 
-                    }  
+                    lstTsks.Add(tsk);
                 }              
             }
              
