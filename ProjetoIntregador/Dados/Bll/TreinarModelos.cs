@@ -167,7 +167,7 @@ namespace ProjetoIntregador.Dados.Bll
                 sb.AppendLine("and g.secao = &SECAO");
                 sb.AppendLine("and g.grp = &GRUPO");
                 sb.AppendLine("and g.sgrp = &SUBGRUPO");
-                sb.AppendLine("and g.dia between 1150101 and 1190831"); // TODO: REMOVER ESSE FILTRO DE DATA EM PRODUÇÃO
+                sb.AppendLine("and g.dia between 1170101 and 1190831"); // TODO: REMOVER ESSE FILTRO DE DATA EM PRODUÇÃO
                 sb.AppendLine("and g.vda_cmv > 0");
                 sb.AppendLine("order by g.dia");
 
@@ -312,7 +312,7 @@ namespace ProjetoIntregador.Dados.Bll
                                 logger.LogInformation($"Inicio Treina Filial {filial.Filial} Categoria {categoria.Secao}/{categoria.Grupo}/{categoria.SubGrupo}");
                                 var historico = ListarHistorico(filial.Filial, categoria.Secao, categoria.Grupo, categoria.SubGrupo);
         
-                                if (historico != null && historico.Where(f=> f.Dia >= new DateTime(2018,1,1)).Count() > 365 && historico.Where(f=> f.Dia >= new DateTime(2019,1,1)).Sum(m => m.Valor) > 1000)
+                                if (historico != null && historico.Where(f=> f.Dia >= new DateTime(2018,1,1)).Count() > 365 && historico.Where(f=> f.Dia >= new DateTime(2019,8,1)).Sum(m => m.Valor) > 100)
                                 {                                
                                     var transformedData = transformData.TransformaDados(historico);
                                     logger.LogInformation($"Cria modelo Filial {filial.Filial} Categoria {categoria.Secao}/{categoria.Grupo}/{categoria.SubGrupo}");

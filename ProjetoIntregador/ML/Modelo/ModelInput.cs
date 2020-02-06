@@ -95,22 +95,23 @@ namespace ProjetoIntregador.ML.Modelo
         [ColumnName("DIA_SAB"), LoadColumn(21)]
         public float DIA_SAB { get; set; }
 
-        [ColumnName("FERIADO"), LoadColumn(22)]
+        //[ColumnName("FERIADO"), LoadColumn(22)]
         public float FERIADO { get; set; }
 
-        [ColumnName("MAXTEMPC"), LoadColumn(23)]
+        //[ColumnName("MAXTEMPC"), LoadColumn(23)]
         public float MAXTEMPC { get; set; }
 
-        [ColumnName("MINTEMPC"), LoadColumn(24)]
+        //[ColumnName("MINTEMPC"), LoadColumn(24)]
         public float MINTEMPC { get; set; }
 
-        [ColumnName("AVGTEMPC"), LoadColumn(25)]
+        //[ColumnName("AVGTEMPC"), LoadColumn(25)]
         public float AVGTEMPC { get; set; }
 
-        [ColumnName("PRECIPMM"), LoadColumn(26)]
+        //[ColumnName("PRECIPMM"), LoadColumn(26)]
         public float PRECIPMM { get; set; }
 
-        [ColumnName("Label"), LoadColumn(27)]
+        //[ColumnName("Label"), LoadColumn(27)]
+        [ColumnName("Label"), LoadColumn(22)]
         public float Label { get; set; }
     }
 }
