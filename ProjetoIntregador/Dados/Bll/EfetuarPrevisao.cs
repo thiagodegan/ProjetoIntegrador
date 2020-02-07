@@ -542,7 +542,7 @@ namespace ProjetoIntregador.Dados.Bll
             try
             {
                 StringBuilder sb = new StringBuilder();                
-                sb.AppendLine("select p.filial, p.secao, p.grupo, p.subgrupo,");
+                sb.AppendLine("select p.secao, p.grupo, p.subgrupo,");
                 sb.AppendLine("       sum(p.cmv) previsao,");
                 sb.AppendLine("       sum((r.vda_cmv)) cmv_real");
                 sb.AppendLine("from dsdh_previsao_cmv p");
@@ -552,6 +552,7 @@ namespace ProjetoIntregador.Dados.Bll
                 sb.AppendLine("                                and r.grp = p.grupo");
                 sb.AppendLine("                                and r.sgrp = p.subgrupo");
                 sb.AppendLine("where p.dia between &DTINI and &DTFIM");
+                sb.AppendLine("and r.vda_cmv > 0");
 
                 if (Filiais != null && Filiais.Length > 0)
                 {
@@ -594,8 +595,8 @@ namespace ProjetoIntregador.Dados.Bll
                     sb.AppendLine(")");
                 }
 
-                sb.AppendLine("group by p.filial, p.secao, p.grupo, p.subgrupo");
-                sb.AppendLine("order by p.filial, p.secao, p.grupo, p.subgrupo");
+                sb.AppendLine("group by p.secao, p.grupo, p.subgrupo");
+                sb.AppendLine("order by p.secao, p.grupo, p.subgrupo");
 
                 Dictionary<string, object> param = new Dictionary<string, object>
                 {
@@ -618,7 +619,7 @@ namespace ProjetoIntregador.Dados.Bll
                         {
                             switch (dc.ColumnName.ToUpper())
                             {
-                                case "FILIAL": registroCmv.Filial = Convert.ToInt32(dr[dc]); break;
+                                //case "FILIAL": registroCmv.Filial = Convert.ToInt32(dr[dc]); break;
                                 case "SECAO": registroCmv.Secao = Convert.ToInt32(dr[dc]); break;
                                 case "GRUPO": registroCmv.Grupo = Convert.ToInt32(dr[dc]); break;
                                 case "SUBGRUPO": registroCmv.SubGrupo = Convert.ToInt32(dr[dc]); break;

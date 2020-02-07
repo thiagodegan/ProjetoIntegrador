@@ -76,19 +76,19 @@ namespace ProjetoIntregador.Controllers
                     dados = new List<RegistroCmv>();
                 }
 
-                var filiais = treinarModelos.ListarFiliais();
+                //var filiais = treinarModelos.ListarFiliais();
                 var categorias = treinarModelos.ListarCategorias();
 
                 foreach(var previsao in dados)
                 {
-                    var qryFil = from p in filiais
-                                 where p.Filial == previsao.Filial
-                                 select p;
+                    //var qryFil = from p in filiais
+                    //             where p.Filial == previsao.Filial
+                    //             select p;
                     
-                    if (qryFil != null && qryFil.Any())
-                    {
-                        previsao.Nome = qryFil.First().Nome;
-                    }
+                    //if (qryFil != null && qryFil.Any())
+                    //{
+                    //    previsao.Nome = qryFil.First().Nome;
+                    //}
 
                     var qrySec = from p in categorias
                                  where p.Secao == previsao.Secao

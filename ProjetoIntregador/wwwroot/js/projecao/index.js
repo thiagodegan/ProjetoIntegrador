@@ -138,8 +138,7 @@
                 });
             },
             cache: false
-        },
-        group: { field: "Nome" }
+        }
     });
 
     $("#chart").kendoChart({
