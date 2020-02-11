@@ -10,11 +10,11 @@
 <div class="row">
     <div class="col-xs-12 col-md-2">
         <h4>Data Inicial</h4>
-        <kendo-datepicker name="dtini" value="DateTime.Now.Date" style="width: 100%" />
+        <kendo-datepicker name="dtini" value="new DateTime(2019,9,1)" style="width: 100%" />
     </div>
     <div class="col-xs-12 col-md-2">
         <h4>Data Final</h4>
-        <kendo-datepicker name="dtfim" value="DateTime.Now.Date" style="width: 100%" />
+        <kendo-datepicker name="dtfim" value="new DateTime(2019,9,30)" style="width: 100%" />
     </div>
     <div class="col-xs-12 col-md-3">
         <h4>Filiais</h4>
@@ -43,7 +43,7 @@
                 <h5 class="k-card-title">CMV Realizado</h5>
             </div>
             <div class="k-card-body">
-                <p id="realizadoCard"> </p>
+                <p style="font-size:40px;" id="realizadoCard"> </p>
             </div>
         </div>
         <div class="k-card">
@@ -51,7 +51,7 @@
                 <h5 class="k-card-title">CMV Previsto</h5>
             </div>
             <div class="k-card-body">
-                <p id="previstoCard"> </p>
+                <p style="font-size:40px;" id="previstoCard"> </p>
             </div>
         </div>
         <div class="k-card">
@@ -59,7 +59,7 @@
                 <h5 class="k-card-title">Erro na Previs&atilde;o</h5>
             </div>
             <div class="k-card-body">
-                <p id="erroCard"> </p>
+                <p style="font-size:40px;" id="erroCard"> </p>
             </div>
         </div>
     </div>

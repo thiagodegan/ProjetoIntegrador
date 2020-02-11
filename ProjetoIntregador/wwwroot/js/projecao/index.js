@@ -74,9 +74,9 @@
         if (realizado > 0) {
             erro = (previsto-realizado)/realizado;
         }
-
-        realizadoElement.innerHTML = Math.round(realizado);
-        previstoElement.innerHTML = Math.round(previsto);
+        var formato = { minimumFractionDigits: 0, style: 'currency', currency: 'BRL' };
+        realizadoElement.innerHTML = Math.round(realizado).toLocaleString('pt-BR', formato);
+        previstoElement.innerHTML = Math.round(previsto).toLocaleString('pt-BR', formato);
         erroElement.innerHTML = Math.round(erro * 10000)/100 + "%";
     }
 

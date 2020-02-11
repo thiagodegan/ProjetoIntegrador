@@ -79,6 +79,12 @@ namespace ProjetoIntregador.Controllers
                 //var filiais = treinarModelos.ListarFiliais();
                 var categorias = treinarModelos.ListarCategorias();
 
+                var qryFil = from p in dados
+                             where p.Erro >= -0.10 && p.Erro <= 0.10
+                             select p;
+
+                dados = qryFil.ToList();
+
                 foreach(var previsao in dados)
                 {
                     //var qryFil = from p in filiais
